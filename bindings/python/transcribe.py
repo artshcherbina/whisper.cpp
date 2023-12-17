@@ -5,7 +5,7 @@ import os
 import re
 import time
 import pyperclip
-
+import pygame
 import numpy as np
 import speech_recognition as sr
 
@@ -16,25 +16,15 @@ from sys import platform
 
 from scipy.io import wavfile
 from whisper_cpp import WhisperCpp
+import json
+import pynput
+from playsound import playsound
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="medium", help="Model to use",
-                        choices=["tiny", "base", "small", "medium", "large"])
-    parser.add_argument("--energy_threshold", default=100,
-                        help="Energy level for mic to detect.", type=int)
-    parser.add_argument("--record_timeout", default=30,
-                        help="How real time the recording is in seconds.", type=float)
-    parser.add_argument("--pause_timeout", default=0.5,
-                        help="How much empty space between recordings before we "
-                             "consider it a new line in the transcription.", type=float)
-    parser.add_argument("--no-gpu", help="Disable GPU usage", action="store_true")
-    if 'linux' in platform:
-        parser.add_argument("--default_microphone", default='pulse',
-                            help="Default microphone name for SpeechRecognition. "
-                                 "Run this with 'list' to view available Microphones.", type=str)
-    args = parser.parse_args()
+    current_file_directory = os.path.dirname(os.path.abspath(__file__))
+    with open(current_file_directory + '/config.json', 'r') as f:
+        args = argparse.Namespace(**json.load(f))
 
     # Thread safe Queue for passing data from the threaded recording callback.
     data_queue = Queue()
@@ -66,8 +56,6 @@ def main():
 
     record_timeout = args.record_timeout
 
-    transcription = ['']
-
     # with source:
         # recorder.adjust_for_ambient_noise(source)
 
@@ -87,75 +75,69 @@ def main():
     # Cue the user that we're ready to go.
     print("Model loaded.\n")
     language = "en"
+    pygame.mixer.init()
 
     while True:
-        try:
-            # Pull raw recorded audio from the queue.
-            if data_queue.empty():
-                # Infinite loops are bad for processors, must sleep.
-                sleep(0.01)
-            else:
-                start = time.time()
-                # Combine audio data from queue
-                audio_data = b''.join(data_queue.queue)
-                data_queue.queue.clear()
-                
-                # Convert in-ram buffer to something the model can use directly without needing a temp file.
-                # Convert data from 16 bit wide integers to floating point with a width of 32 bits.
-                # Clamp the audio stream frequency to a PCM wavelength compatible default of 32768hz max.
-                audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+        # Pull raw recorded audio from the queue.
+        if data_queue.empty():
+            # Infinite loops are bad for processors, must sleep.
+            sleep(0.01)
+        else:
+            start = time.time()
+            # Combine audio data from queue
+            audio_data = b''.join(data_queue.queue)
+            data_queue.queue.clear()
 
-                # Read the transcription.
-                original_text = audio_model.transcribe(audio_np, language=language).strip()
-                text = original_text
+            # Convert in-ram buffer to something the model can use directly without needing a temp file.
+            # Convert data from 16 bit wide integers to floating point with a width of 32 bits.
+            # Clamp the audio stream frequency to a PCM wavelength compatible default of 32768hz max.
+            audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
 
-                text = text.rstrip('.').strip()
-                text = text[:1].upper() + text[1:]
+            # Read the transcription.
+            original_text = audio_model.transcribe(audio_np, language=language).strip()
+            text = original_text
 
-                # Replace punctuations
-                punctuations = {
-                    ":": ["colon", "двоето", "двойто"]
-                }
-                for punctuation, parts in punctuations.items():
-                    for part in parts:
-                        if part in text.lower():
-                            text = re.sub(" *" + part + "\S*", punctuation, text, flags=re.IGNORECASE)
+            text = text.rstrip('.').strip()
+            text = text[:1].upper() + text[1:]
 
-                text = re.sub(r'\s([:.])', r'\1', text)
+            # Replace punctuations
+            punctuations = {
+                ":": ["colon", "двоето", "двойто"]
+            }
+            for punctuation, parts in punctuations.items():
+                for part in parts:
+                    if part in text.lower():
+                        text = re.sub(" *" + part + "\S*", punctuation, text, flags=re.IGNORECASE)
 
-                # Check if text matches one of the values and set params.language
-                languages = {
-                    "en": ["English", "Англий", "англий", "Англійсь", "영어"],
-                    "ru": ["Russian", "Rusk", "Русский", "русский", "російсь"],
-                    "uk": ["Ukrain", "украинск", "українс"],
-                    "ko": ["Korean", "корей"],
-                }
-                language_changed = False
-                if " " not in text:
-                    for l, values in languages.items():
-                        if any(re.search(value, text, re.IGNORECASE) for value in values):
-                            language = l
-                            language_changed = True
+            text = re.sub(r'\s([:.])', r'\1', text)
 
-                hallucination_parts = {"продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm"}
-                hallucinations = {"ahem", "угу", "thank you", "um", "Дякую!", "감사합니다", "хм", "흐", "흐흐", "흐흠", "시청해주셔서 감사합니다"}
+            # Check if text matches one of the values and set params.language
+            languages = {
+                "en": ["English", "Англий", "англий", "Англійсь", "영어"],
+                "ru": ["Russian", "Rusk", "Русский", "русский", "російсь"],
+                "uk": ["Ukrain", "украинск", "українс"],
+                "ko": ["Korean", "корей"],
+            }
+            language_changed = False
+            if " " not in text:
+                for l, values in languages.items():
+                    if any(re.search(value, text, re.IGNORECASE) for value in values):
+                        language = l
+                        language_changed = True
 
-                if any([v in text.lower() for v in hallucination_parts]):
-                    text = ""
-                if any([v == text.lower() for v in hallucinations]):
-                    text = ""
+            hallucination_parts = {"продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm"}
+            hallucinations = {"ahem", "угу", "thank you", "um", "Дякую!", "감사합니다", "хм", "흐", "흐흐", "흐흠", "시청해주셔서 감사합니다"}
 
-                print(f"[{len(audio_np) / 16000:3.1f}s, {time.time() - start:3.1f}s] <{original_text}> -> <{text}>") 
-                if text:
-                    os.system(f"play /home/artem/Downloads/{language if language_changed else 'beep'}.mp3 &> /dev/null &")
-                    pyperclip.copy(text)
-        except KeyboardInterrupt:
-            break
+            if any([v in text.lower() for v in hallucination_parts]):
+                text = ""
+            if any([v == text.lower() for v in hallucinations]):
+                text = ""
 
-    print("\n\nTranscription:")
-    for line in transcription:
-        print(line)
-
+            print(f"[{len(audio_np) / 16000:3.1f}s, {time.time() - start:3.1f}s] <{original_text}> -> <{text}>")
+            if text:
+                pygame.mixer.music.load(f"{current_file_directory}/sounds/{language if language_changed else 'beep'}.mp3")
+                pygame.mixer.music.play()
+                pyperclip.copy(text)
 
 if __name__ == "__main__":
     main()

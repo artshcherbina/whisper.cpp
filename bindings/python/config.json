@@ -1,0 +1,8 @@
+{
+    "model": "medium",
+    "energy_threshold": 100,
+    "record_timeout": 30,
+    "pause_timeout": 0.5,
+    "no_gpu": false,
+    "default_microphone": "pulse"
+}

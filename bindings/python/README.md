@@ -1,39 +1,30 @@
-# Python bindings for Whisper
+# Whisper Speech Recognition
 
-This is a guide on Python bindings for whisper.cpp. It has been tested on:
+This Python application uses OpenAI's Whisper ASR model for transcribing spoken language into text. It offers flexibility and customization, allowing you to adjust settings such as speech detection threshold, recording duration, pause timeout, GPU usage, and microphone selection. Configuration is made easy through a JSON file. 
 
-  * Darwin (OS X) 14.0 on arm64 - not working, library won't load!
-  * Ubuntu x86_64 - works, also with CUDA acceleration and the distil model!
+Available options:
 
+- `energy_threshold`: This option sets the energy level threshold for the microphone to detect speech. It's an integer value and the default is 100.
 
-## Usage
-It can be used like this:
+- `record_timeout`: This option sets the real-time duration of the recording in seconds. It's a floating-point value and the default is 30.
 
-  * move the compiled 'libwhisper.so' to the same directory, or add it to the path.
-  * rebuild the low-level wrapper is something breaks on changes to whisper-cpp (see below).
+- `pause_timeout`: This option sets the amount of empty space (in seconds) between recordings before considering it a new line in the transcription. It's a floating-point value and the default is 0.5.
 
-```python
-from scipy.io import wavfile
-from whisper_cpp import WhisperCpp
+- `no_gpu`: This is a boolean option that, when set to true, disables GPU usage. The default is false, meaning that GPU usage is enabled by default.
 
-# prepare audio data
-samplerate, audio = wavfile.read("samples/jfk.wav")
-audio = audio.astype("float32") / 32768.0
+- `default_microphone`: This option sets the default microphone name for SpeechRecognition. If you're on a Linux platform, you can run the script with 'list' to view available microphones. The default value is 'pulse'.
 
-# run the inference
-model = WhisperCpp(model="./models/ggml-medium.en.bin")
-transcription = model.transcribe(audio)
+These options should be set in the `config.json` file in the following format:
 
-print(transcription)
+```json
+{
+    "model": "medium",
+    "energy_threshold": 100,
+    "record_timeout": 30,
+    "pause_timeout": 0.5,
+    "no_gpu": false,
+    "default_microphone": "pulse"
+}
 ```
 
-## Rebuilding
-
-The "low level" bindings are autogenerate and can be simply regenerated as follows:
-
-```bash
-# from the root whisper.pp directory
-> ctypesgen whisper.h -l whisper -o whisper_cpp_wrapper.py
-```
-
-The interface file will probable need to be rewritten manually on big changes to whisper.cpp, but is relatively easy (compared to manual wrapping!).
+You can adjust these values as needed for your specific use case.

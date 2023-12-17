@@ -1,2 +1,4 @@
 pyaudio
 SpeechRecognition
+pygame
+pynput
