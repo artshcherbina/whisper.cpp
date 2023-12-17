@@ -163,7 +163,7 @@ def main():
                         language = l
                         language_changed = True
 
-            hallucination_parts = {"продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm"}
+            hallucination_parts = {"продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm", "♪", "yeah"}
             hallucinations = {"ahem", "угу", "thank you", "um", "Дякую!", "감사합니다", "хм", "흐", "흐흐", "흐흠", "시청해주셔서 감사합니다"}
 
             if any([v in text.lower() for v in hallucination_parts]):
