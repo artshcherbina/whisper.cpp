@@ -21,16 +21,24 @@ from playsound import playsound
 from pynput import keyboard
 import threading
 
-class ShiftKeyListener:
-    def __init__(self):
+pygame.mixer.init()
+
+class KeyListener:
+    def __init__(self, recognition_callback):
         self.last_shift_press = 0
         self.shift_pressed = False
+        self.recognition = True
+        self.recognition_callback = recognition_callback
         self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
 
     def on_press(self, key):
         if key == keyboard.Key.shift:
             self.shift_pressed = True
             print('Shift key was pressed')
+        if key == keyboard.Key.f12:
+            self.recognition = not self.recognition
+            print('Recognition ' + ("enabled" if self.recognition else "disabled"))
+            self.recognition_callback(self.recognition)
 
     def on_release(self, key):
         if key == keyboard.Key.shift and self.shift_pressed:
@@ -73,7 +81,7 @@ def main():
 
     # Load / Download model
     # args.model
-    audio_model = WhisperCpp(model="/home/artem/git/whisper.cpp/models/ggml-large-v3-q5_0.bin", use_gpu=not args.no_gpu)
+    audio_model = WhisperCpp(model="/home/artem/git/whisper.cpp/models/ggml-large-v3-q5_0.bin", use_gpu=args.use_gpu)
 
     record_timeout = args.record_timeout
 
@@ -96,15 +104,18 @@ def main():
     # Cue the user that we're ready to go.
     print("Model loaded.\n")
     language = "en"
-    pygame.mixer.init()
 
-    shift_listener = ShiftKeyListener()
-    shift_listener.start()
+    def recognition_callback(enabled):
+        pygame.mixer.music.load(f"{current_file_directory}/sounds/{language}_{'on' if enabled else 'off'}.mp3")
+        pygame.mixer.music.play()
+
+    key_listener = KeyListener(recognition_callback)
+    key_listener.start()
 
     while True:
         # Pull raw recorded audio from the queue.
-        if data_queue.empty():
-            # Infinite loops are bad for processors, must sleep.
+        if data_queue.empty() or not key_listener.recognition:
+            data_queue.queue.clear()
             sleep(0.01)
         else:
             start = time.time()
@@ -118,7 +129,7 @@ def main():
             audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
 
             upper_case = False
-            if shift_listener.shift_pressed or time.time() - shift_listener.last_shift_press < len(audio_np) / 16000:
+            if key_listener.shift_pressed or time.time() - key_listener.last_shift_press < len(audio_np) / 16000:
                 upper_case = True
             # Read the transcription.
             original_text = audio_model.transcribe(audio_np, language=language).strip()

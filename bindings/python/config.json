@@ -3,6 +3,6 @@
     "energy_threshold": 100,
     "record_timeout": 30,
     "pause_timeout": 0.5,
-    "no_gpu": false,
+    "use_gpu": true,
     "default_microphone": "pulse"
 }
