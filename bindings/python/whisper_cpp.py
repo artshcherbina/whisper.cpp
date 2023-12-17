@@ -9,28 +9,31 @@ class WhisperCpp:
     speech recognition model.
     """
 
-    def __init__(self, model: str, params=None) -> None:
-        self.ctx = whisper_cpp_wrapper.whisper_init_from_file(model.encode("utf-8"))
+    def __init__(self, model: str, use_gpu=True) -> None:
+        params = whisper_cpp_wrapper.whisper_context_params()
+        params.use_gpu = use_gpu
+        self.ctx = whisper_cpp_wrapper.whisper_init_from_file_with_params(model.encode("utf-8"), params)
 
-    def transcribe(self, audio: np.ndarray, params=None) -> str:
+    def transcribe(self, audio: np.ndarray, language = "en") -> str:
         """Transcribe audio using the given parameters.
 
         Any is whisper_cpp.WhisperParams, but we can't import that here
         because it's a C++ class.
         """
         # Set the default parameters if none are given
-        if not params:
-            self.params = whisper_cpp_wrapper.whisper_full_default_params(
-                whisper_cpp_wrapper.WHISPER_SAMPLING_GREEDY  # 0, faster
-            )
-        else:
-            self.params = params
+        self.params = whisper_cpp_wrapper.whisper_full_default_params(
+            # whisper_cpp_wrapper.WHISPER_SAMPLING_GREEDY  # 0, faster
+            whisper_cpp_wrapper.WHISPER_SAMPLING_BEAM_SEARCH
+        )
+        self.params.language = whisper_cpp_wrapper.String(language.encode('utf-8'))
 
+        # print(f"Running on audio with duration {len(audio)}")
         # Run the model
         whisper_cpp_audio = audio.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
         result = whisper_cpp_wrapper.whisper_full(
             self.ctx, self.params, whisper_cpp_audio, len(audio)
         )
+
         if result != 0:
             raise Exception(f"Error from whisper.cpp: {result}")
 
@@ -41,7 +44,7 @@ class WhisperCpp:
             for i in range(n_segments)
         ]
 
-        return text[0].decode("utf-8")
+        return text[0].decode("utf-8") if len(text) else ""
 
     def __del__(self):
         """
