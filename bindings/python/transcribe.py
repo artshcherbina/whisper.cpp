@@ -26,7 +26,7 @@ def main():
                         help="Energy level for mic to detect.", type=int)
     parser.add_argument("--record_timeout", default=30,
                         help="How real time the recording is in seconds.", type=float)
-    parser.add_argument("--phrase_timeout", default=0.5,
+    parser.add_argument("--pause_timeout", default=0.5,
                         help="How much empty space between recordings before we "
                              "consider it a new line in the transcription.", type=float)
     parser.add_argument("--no-gpu", help="Disable GPU usage", action="store_true")
@@ -39,8 +39,7 @@ def main():
     # Thread safe Queue for passing data from the threaded recording callback.
     data_queue = Queue()
     # We use SpeechRecognizer to record our audio because it has a nice feature where it can detect when speech ends.
-    recorder = sr.Recognizer()
-    recorder.energy_threshold = args.energy_threshold
+    recorder = sr.Recognizer(args.energy_threshold, args.pause_timeout)
     # Definitely do this, dynamic energy compensation lowers the energy threshold dramatically to a point where the SpeechRecognizer never stops recording.
     recorder.dynamic_energy_threshold = False
 
@@ -126,8 +125,10 @@ def main():
 
                 # Check if text matches one of the values and set params.language
                 languages = {
-                    "ru": ["Russian", "Rusk", "Русский", "русский"],
-                    "en": ["English", "Англий", "англий"]
+                    "en": ["English", "Англий", "англий", "Англійсь", "영어"],
+                    "ru": ["Russian", "Rusk", "Русский", "русский", "російсь"],
+                    "uk": ["Ukrain", "украинск", "українс"],
+                    "ko": ["Korean", "корей"],
                 }
                 language_changed = False
                 if " " not in text:
@@ -136,9 +137,18 @@ def main():
                             language = l
                             language_changed = True
 
-                pyperclip.copy(text)
+                hallucination_parts = {"продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm"}
+                hallucinations = {"ahem", "угу", "thank you", "um", "Дякую!", "감사합니다", "хм", "흐", "흐흐", "흐흠", "시청해주셔서 감사합니다"}
+
+                if any([v in text.lower() for v in hallucination_parts]):
+                    text = ""
+                if any([v == text.lower() for v in hallucinations]):
+                    text = ""
+
                 print(f"[{len(audio_np) / 16000:3.1f}s, {time.time() - start:3.1f}s] <{original_text}> -> <{text}>") 
-                os.system(f"play /home/artem/Downloads/{language if language_changed else 'beep'}.mp3 &> /dev/null &")
+                if text:
+                    os.system(f"play /home/artem/Downloads/{language if language_changed else 'beep'}.mp3 &> /dev/null &")
+                    pyperclip.copy(text)
         except KeyboardInterrupt:
             break
 
