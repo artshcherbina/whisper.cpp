@@ -12,6 +12,8 @@
 #include <thread>
 #include <vector>
 #include <fstream>
+#include <regex>
+#include <iostream>
 
 
 //  500 -> 00:05.000
@@ -382,7 +384,8 @@ int main(int argc, char ** argv) {
 
                 const int n_segments = whisper_full_n_segments(ctx);
                 for (int i = 0; i < n_segments; ++i) {
-                    std::string text = whisper_full_get_segment_text(ctx, i);
+                    std::string original_text = whisper_full_get_segment_text(ctx, i);
+                    std::string text = original_text;
 
                     if (params.no_timestamps) {
                         if (text[0] == ' ') { // Remove initial space
@@ -392,9 +395,37 @@ int main(int argc, char ** argv) {
                         if (text[text.size() - 1] == '.') { // Remove trailing dot
                             text.resize(text.size() - 1);
                         }
-                        printf("[%3.1fs] <%s>\n", (std::chrono::system_clock::now() - start).count() / 1000000000.f, text.data());
-                        std::string cmd = std::string("echo -n \"") + text + std::string("\" | xclip -selection clipboard");
+                        std::map<std::string, std::vector<std::string> > punctuations;
+                        punctuations[":"] = {"colon", "Двоето", "двоето", "двойто", "Двойто"};
+                        for (const auto& punctuation : punctuations)
+                            for (const auto& t : punctuation.second)
+                                if (text.find(t) != std::string::npos)
+                                {
+                                    text = std::regex_replace(text, std::regex(t + "[^ ]*"), punctuation.first); 
+                                }
+                        text = std::regex_replace(text, std::regex("[ .]*([:])"), "$1"); 
+
+                        printf("[%3.1fs] <%s> -> ", (std::chrono::system_clock::now() - start).count() / 1000000000.f, original_text.data());
+                        fflush(stdout);
+                        std::string cmd = std::string("/home/artem/Downloads/copy.sh \"") + text + std::string("\"");
                         int r = system(cmd.data());
+                        bool language_changed = false;
+                        if (text.find(" ") == std::string::npos)
+                        {
+                            std::map<std::string, std::vector<std::string> > languages;
+                            languages["ru"] = {"Russian", "Rusk", "Русский", "русский"};
+                            languages["en"] = {"English", "Англий", "англий"};
+                            // check if text matches one of the values and set params.language
+                            for (const auto& language : languages)
+                                for (const auto& t : language.second)
+                                    if (text.find(t) != std::string::npos)
+                                    {
+                                        params.language = language.first;
+                                        language_changed = true;
+                                    }
+                        }
+                        cmd = std::string("play /home/artem/Downloads/") + (language_changed ? params.language : "beep") + ".mp3 &";
+                        r = system(cmd.data());
 
                         fflush(stdout);
 
@@ -457,7 +488,7 @@ int main(int argc, char ** argv) {
             fflush(stdout);
         }
         else
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
     audio.pause();
