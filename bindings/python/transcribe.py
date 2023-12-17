@@ -60,6 +60,7 @@ class Transcriber:
         self.recorder = sr.Recognizer(self.args.energy_threshold, self.args.pause_timeout)
         self.recorder.dynamic_energy_threshold = False
         self.language = "en"
+        pygame.mixer.music.set_volume(self.args.volume)
 
         if 'linux' in platform:
             mic_name = self.args.default_microphone
@@ -116,10 +117,7 @@ class Transcriber:
                 text = (text[:1].upper() if upper_case else text[:1].lower()) + text[1:]
 
                 # Replace punctuations
-                punctuations = {
-                    ":": ["colon", "двоето", "двойто"]
-                }
-                for punctuation, parts in punctuations.items():
+                for punctuation, parts in self.args.punctuations.items():
                     for part in parts:
                         if part in text.lower():
                             text = re.sub(" *" + part + "\S*", punctuation, text, flags=re.IGNORECASE)
@@ -127,15 +125,9 @@ class Transcriber:
                 text = re.sub(r'\s([:.])', r'\1', text)
 
                 # Check if text matches one of the values and set params.language
-                languages = {
-                    "en": ["English", "Англий", "англий", "Англійсь", "영어"],
-                    "ru": ["Russian", "Rusk", "Русский", "русский", "російсь"],
-                    "uk": ["Ukrain", "украинск", "українс"],
-                    "ko": ["Korean", "корей"],
-                }
                 language_changed = False
                 if " " not in text:
-                    for l, values in languages.items():
+                    for l, values in self.args.languages.items():
                         if any(re.search(value, text, re.IGNORECASE) for value in values):
                             self.language = l
                             language_changed = True

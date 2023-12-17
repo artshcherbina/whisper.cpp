@@ -15,16 +15,18 @@ During recognition, model can sometimes hallucinate. Thus, some words end phrase
 
 Configuration is made easy through a JSON file.
 Available options:
+- `energy_threshold`: This option sets the energy level threshold for the microphone to detect speech.
+- `record_timeout`: This option sets the real-time duration of the recording in seconds.
+- `pause_timeout`: This option sets the amount of empty space (in seconds) between recordings before considering it a new line in the transcription.
+- `no_gpu`: This is a boolean option that, when set to true, disables GPU usage.
+- `default_microphone`: This option sets the default microphone name for SpeechRecognition. If you're on a Linux platform, you can run the script with 'list' to view available microphones.
+- `volume`: This option sets the volume for the pygame mixer.
+- `punctuations`: This is a dictionary option where the keys are punctuation marks and the values are lists of phrases that should be replaced with the corresponding punctuation mark.
+- `languages`: This is a dictionary option where the keys are language codes and the values are lists of phrases that should be recognized as the corresponding language.
+- `hallucination_parts`: This is a list option containing phrases that, if present in the transcribed text, should cause the entire text to be discarded.
+- `hallucinations`: This is a list option containing phrases that, if they match the transcribed text exactly, should cause the text to be discarded.
 
-- `energy_threshold`: This option sets the energy level threshold for the microphone to detect speech. It's an integer value and the default is 100.
-
-- `record_timeout`: This option sets the real-time duration of the recording in seconds. It's a floating-point value and the default is 30.
-
-- `pause_timeout`: This option sets the amount of empty space (in seconds) between recordings before considering it a new line in the transcription. It's a floating-point value and the default is 0.5.
-
-- `no_gpu`: This is a boolean option that, when set to true, disables GPU usage. The default is false, meaning that GPU usage is enabled by default.
-
-- `default_microphone`: This option sets the default microphone name for SpeechRecognition. If you're on a Linux platform, you can run the script with 'list' to view available microphones. The default value is 'pulse'.
+These options should be set in the `config.json` file.
 
 These options should be set in the [`config.json`](./config.json).
 
