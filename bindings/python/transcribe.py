@@ -34,17 +34,17 @@ class KeyListener:
     def on_press(self, key):
         if key == keyboard.Key.shift:
             self.shift_pressed = True
-            print('Shift key was pressed')
+            # print('Shift key was pressed')
         if key == keyboard.Key.f12:
             self.recognition = not self.recognition
-            print('Recognition ' + ("enabled" if self.recognition else "disabled"))
+            # print('Recognition ' + ("enabled" if self.recognition else "disabled"))
             self.recognition_callback(self.recognition)
 
     def on_release(self, key):
         if key == keyboard.Key.shift and self.shift_pressed:
             self.shift_pressed = False
             self.last_shift_press = time.time()
-            print('Shift key was released, it was last pressed at', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.last_shift_press)))
+            # print('Shift key was released, it was last pressed at', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.last_shift_press)))
 
     def start(self):
         thread = threading.Thread(target=self.listener.start)
@@ -163,12 +163,9 @@ def main():
                         language = l
                         language_changed = True
 
-            hallucination_parts = {"продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm", "♪", "yeah"}
-            hallucinations = {"ahem", "угу", "thank you", "um", "Дякую!", "감사합니다", "хм", "흐", "흐흐", "흐흠", "시청해주셔서 감사합니다"}
-
-            if any([v in text.lower() for v in hallucination_parts]):
+            if any([v in text.lower() for v in args.hallucination_parts]):
                 text = ""
-            if any([v == text.lower() for v in hallucinations]):
+            if any([v == text.lower() for v in args.hallucinations]):
                 text = ""
 
             print(f"[{len(audio_np) / 16000:3.1f}s, {time.time() - start:3.1f}s] <{original_text}> -> <{text}>")

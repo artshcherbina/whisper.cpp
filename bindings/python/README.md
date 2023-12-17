@@ -11,6 +11,8 @@ To switch languages, simply say the name of the language (English, Ukrainian, Ko
 
 You can enable or disable recognition by pressing F12 key.
 
+During recognition, model can sometimes hallucinate. Thus, some words end phrases are excluded from transcription.
+
 Configuration is made easy through a JSON file.
 Available options:
 
@@ -33,7 +35,9 @@ These options should be set in the [`config.json`](./config.json) file in the fo
     "record_timeout": 30,
     "pause_timeout": 0.5,
     "no_gpu": false,
-    "default_microphone": "pulse"
+    "default_microphone": "pulse",
+    "hallucination_parts": ["продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm", "♪", "yeah"],
+    "hallucinations": ["ahem", "угу", "thank you", "um", "Дякую!", "감사합니다", "хм", "흐", "흐흐", "흐흠", "시청해주셔서 감사합니다"]
 }
 ```
 

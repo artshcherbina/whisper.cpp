@@ -4,5 +4,7 @@
     "record_timeout": 30,
     "pause_timeout": 0.5,
     "use_gpu": true,
-    "default_microphone": "pulse"
+    "default_microphone": "pulse",
+    "hallucination_parts": ["продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm", "♪", "yeah"],
+    "hallucinations": ["ahem", "угу", "thank you", "um", "Дякую!", "감사합니다", "хм", "흐", "흐흐", "흐흠", "시청해주셔서 감사합니다"]
 }
