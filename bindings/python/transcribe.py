@@ -17,9 +17,30 @@ from sys import platform
 from scipy.io import wavfile
 from whisper_cpp import WhisperCpp
 import json
-import pynput
 from playsound import playsound
+from pynput import keyboard
+import threading
 
+class ShiftKeyListener:
+    def __init__(self):
+        self.last_shift_press = 0
+        self.shift_pressed = False
+        self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+
+    def on_press(self, key):
+        if key == keyboard.Key.shift:
+            self.shift_pressed = True
+            print('Shift key was pressed')
+
+    def on_release(self, key):
+        if key == keyboard.Key.shift and self.shift_pressed:
+            self.shift_pressed = False
+            self.last_shift_press = time.time()
+            print('Shift key was released, it was last pressed at', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.last_shift_press)))
+
+    def start(self):
+        thread = threading.Thread(target=self.listener.start)
+        thread.start()
 
 def main():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
@@ -77,6 +98,9 @@ def main():
     language = "en"
     pygame.mixer.init()
 
+    shift_listener = ShiftKeyListener()
+    shift_listener.start()
+
     while True:
         # Pull raw recorded audio from the queue.
         if data_queue.empty():
@@ -93,12 +117,15 @@ def main():
             # Clamp the audio stream frequency to a PCM wavelength compatible default of 32768hz max.
             audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
 
+            upper_case = False
+            if shift_listener.shift_pressed or time.time() - shift_listener.last_shift_press < len(audio_np) / 16000:
+                upper_case = True
             # Read the transcription.
             original_text = audio_model.transcribe(audio_np, language=language).strip()
             text = original_text
 
             text = text.rstrip('.').strip()
-            text = text[:1].upper() + text[1:]
+            text = (text[:1].upper() if upper_case else text[:1].lower()) + text[1:]
 
             # Replace punctuations
             punctuations = {
@@ -135,7 +162,7 @@ def main():
 
             print(f"[{len(audio_np) / 16000:3.1f}s, {time.time() - start:3.1f}s] <{original_text}> -> <{text}>")
             if text:
-                pygame.mixer.music.load(f"{current_file_directory}/sounds/{language if language_changed else 'beep'}.mp3")
+                pygame.mixer.music.load(f"{current_file_directory}/sounds/{language + '.mp3' if language_changed else 'done.wav'}")
                 pygame.mixer.music.play()
                 pyperclip.copy(text)
 
