@@ -1,4 +1,5 @@
 {
+    "server": "http://localhost:5000/transcribe",
     "model": "medium",
     "energy_threshold": 100,
     "record_timeout": 30,

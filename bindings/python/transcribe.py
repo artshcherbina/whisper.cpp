@@ -20,6 +20,7 @@ import json
 from playsound import playsound
 from pynput import keyboard
 import threading
+import requests
 
 pygame.mixer.init()
 
@@ -77,12 +78,12 @@ class Transcriber:
         else:
             self.source = sr.Microphone(sample_rate=16000)
 
-        self.audio_model = WhisperCpp(model="/home/artem/git/whisper.cpp/models/ggml-large-v3-q5_0.bin", use_gpu=self.args.use_gpu)
+        if self.args.server is None:
+            self.audio_model = WhisperCpp(model="/home/artem/git/whisper.cpp/models/ggml-large-v3-q5_0.bin", use_gpu=self.args.use_gpu)
+            print("Model loaded.\n")
         self.record_timeout = self.args.record_timeout
 
         self.recorder.listen_in_background(self.source, self.record_callback, phrase_time_limit=self.record_timeout)
-
-        print("Model loaded.\n")
 
         self.key_listener = KeyListener(self.recognition_callback)
         self.key_listener.start()
@@ -105,15 +106,28 @@ class Transcriber:
                 audio_data = b''.join(self.data_queue.queue)
                 self.data_queue.queue.clear()
 
-                audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
-
-                upper_case = False
-                if self.key_listener.shift_pressed or time.time() - self.key_listener.last_shift_press < len(audio_np) / 16000:
-                    upper_case = True
-                original_text = self.audio_model.transcribe(audio_np, language=self.language).strip()
+                if self.args.server:
+                    print(f"sending {len(audio_data)}")
+                    try:
+                        response = requests.post(self.args.server, files={"audio_data": audio_data, "language": self.language.encode()})
+                        data = response.json()
+                        original_text = data['transcription']
+                        server_time = data['server_time']
+                    except Exception as e:
+                        print(f"transribtion failed: {e}")
+                        continue
+                else:
+                    audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+                    original_text = self.audio_model.transcribe(audio_np, language=self.language)
+                    server_time = 0
                 text = original_text
+                print(f"original_text: {original_text}")
 
                 text = text.rstrip('.').strip()
+
+                upper_case = False
+                if self.key_listener.shift_pressed or time.time() - self.key_listener.last_shift_press < len(audio_data) / 16000:
+                    upper_case = True
                 text = (text[:1].upper() if upper_case else text[:1].lower()) + text[1:]
 
                 # Replace punctuations
@@ -137,7 +151,8 @@ class Transcriber:
                 if any([v == text.lower() for v in self.args.hallucinations]):
                     text = ""
 
-                print(f"[{len(audio_np) / 16000:3.1f}s, {time.time() - start:3.1f}s] <{original_text}> -> <{text}>")
+                total_time = time.time() - start
+                print(f"[{len(audio_data) / 16000:3.1f}s + {server_time:3.1f}s + {total_time - server_time:3.1f}s] <{original_text}> -> <{text}>")
                 if text:
                     pygame.mixer.music.load(f"{self.current_file_directory}/sounds/{self.language + '.mp3' if language_changed else 'done.wav'}")
                     pygame.mixer.music.play()
