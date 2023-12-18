@@ -15,6 +15,7 @@ During recognition, model can sometimes hallucinate. Thus, some words end phrase
 
 Configuration is made easy through a JSON file.
 Available options:
+- `server`: This option specifies the URL of the server where the ASR model is hosted. Otherwise, the application will use the local Whisper ASR model for transcription.
 - `energy_threshold`: This option sets the energy level threshold for the microphone to detect speech.
 - `record_timeout`: This option sets the real-time duration of the recording in seconds.
 - `pause_timeout`: This option sets the amount of empty space (in seconds) between recordings before considering it a new line in the transcription.
