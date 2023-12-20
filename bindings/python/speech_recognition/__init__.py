@@ -333,7 +333,7 @@ class Recognizer(AudioSource):
 
         self.dynamic_energy_threshold = True
         self.dynamic_energy_adjustment_damping = 0.15
-        self.dynamic_energy_ratio = 1.5
+        self.dynamic_energy_ratio = 2.0
         self.operation_timeout = None  # seconds after an internal operation (e.g., an API request) starts before it times out, or ``None`` for no timeout
 
         self.phrase_threshold = 0.3  # minimum seconds of speaking audio before we consider the speaking audio a phrase - values below this are ignored (for filtering out clicks and pops)
@@ -506,6 +506,7 @@ class Recognizer(AudioSource):
                     # dynamically adjust the energy threshold using asymmetric weighted average
                     if self.dynamic_energy_threshold:
                         damping = self.dynamic_energy_adjustment_damping ** seconds_per_buffer  # account for different chunk sizes and rates
+                        # print(damping)
                         target_energy = energy * self.dynamic_energy_ratio
                         self.energy_threshold = self.energy_threshold * damping + target_energy * (1 - damping)
             else:
@@ -527,7 +528,7 @@ class Recognizer(AudioSource):
                     break
 
                 buffer = source.stream.read(source.CHUNK)
-                if len(buffer) == 0: 
+                if len(buffer) == 0:
                     print('len(buffer) == 0')
                     break  # reached end of the stream
                 frames.append(buffer)

@@ -1,21 +1,16 @@
 {
     "server": null,
-    "model": "medium",
-    "energy_threshold": 1000,
+    "energy_threshold": 10000,
     "record_timeout": 30,
-    "pause_timeout": 0.5,
-    "volume": 5.0,
+    "pause_timeout": 1.0,
+    "volume": 2.0,
     "use_gpu": true,
     "default_microphone": "pulse",
-    "hallucination_parts": ["продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm", "♪", "yeah", "fuck"],
-    "hallucinations": ["ahem", "угу", "thank you", "um", "Дякую!", "감사합니다", "хм", "흐", "흐흐", "흐흠", "시청해주셔서 감사합니다"],
     "punctuations": {
         ":": ["colon", "двоето", "двойто"]
     },
     "languages": {
-        "en": ["English", "Англий", "англий", "Англійсь", "영어"],
-        "ru": ["Russian", "Rusk", "Русский", "русский", "російсь"],
-        "uk": ["Ukrain", "украинск", "українс"],
-        "ko": ["Korean", "корей"]
+        "en": "ctrl_r",
+        "ru": "cmd_r"
     }
 }
