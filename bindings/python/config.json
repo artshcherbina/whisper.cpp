@@ -1,10 +1,10 @@
 {
-    "server": "http://localhost:5000/transcribe",
+    "server": null,
     "model": "medium",
-    "energy_threshold": 100,
+    "energy_threshold": 1000,
     "record_timeout": 30,
     "pause_timeout": 0.5,
-    "volume": 0.2,
+    "volume": 5.0,
     "use_gpu": true,
     "default_microphone": "pulse",
     "hallucination_parts": ["продолжение следует", "субтитр", "subtitles", "ммм", "ч-ч", "*", "hmm", "♪", "yeah", "fuck"],

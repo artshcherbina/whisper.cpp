@@ -499,7 +499,7 @@ class Recognizer(AudioSource):
 
                     # detect whether speaking has started on audio input
                     energy = audioop.rms(buffer, source.SAMPLE_WIDTH)  # energy of the audio signal
-                    # print(energy)
+                    print(energy)
                     if energy > self.energy_threshold:
                         break
 
@@ -523,21 +523,26 @@ class Recognizer(AudioSource):
                 # handle phrase being too long by cutting off the audio
                 elapsed_time += seconds_per_buffer
                 if phrase_time_limit and elapsed_time - phrase_start_time > phrase_time_limit:
+                    print('phrase_time_limit and elapsed_time - phrase_start_time > phrase_time_limit')
                     break
 
                 buffer = source.stream.read(source.CHUNK)
-                if len(buffer) == 0: break  # reached end of the stream
+                if len(buffer) == 0: 
+                    print('len(buffer) == 0')
+                    break  # reached end of the stream
                 frames.append(buffer)
                 phrase_count += 1
 
                 # check if speaking has stopped for longer than the pause threshold on the audio input
                 energy = audioop.rms(buffer, source.SAMPLE_WIDTH)  # unit energy of the audio signal within the buffer
+
                 if energy > self.energy_threshold:
                     pause_count = 0
                 else:
                     pause_count += 1
-                # print(pause_count, energy)
+                print(pause_count, energy, self.energy_threshold)
                 if pause_count > pause_buffer_count:  # end of the phrase
+                    # print('pause_count > pause_buffer_count')
                     break
 
             # check how long the detected phrase is, and retry listening if the phrase is too short

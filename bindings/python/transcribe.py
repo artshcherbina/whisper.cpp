@@ -27,25 +27,33 @@ pygame.mixer.init()
 class KeyListener:
     def __init__(self, recognition_callback):
         self.last_shift_press = 0
-        self.shift_pressed = False
+        # self.shift_pressed = False
         self.recognition = True
         self.recognition_callback = recognition_callback
         self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+        self.upper_case = False
 
     def on_press(self, key):
-        if key == keyboard.Key.shift:
-            self.shift_pressed = True
-            # print('Shift key was pressed')
+        if key == keyboard.Key.ctrl_r:
+            # self.shift_pressed = True
+            self.upper_case = not self.upper_case
+            print(f'ctrl_r key was pressed. upper_case = {self.upper_case}')
+            text = pyperclip.paste()
+            text = (text[:1].upper() if self.upper_case else text[:1].lower()) + text[1:]
+            pyperclip.copy(text)
+            print(f'text = {text}')
+
         if key == keyboard.Key.f12:
             self.recognition = not self.recognition
             # print('Recognition ' + ("enabled" if self.recognition else "disabled"))
             self.recognition_callback(self.recognition)
 
     def on_release(self, key):
-        if key == keyboard.Key.shift and self.shift_pressed:
-            self.shift_pressed = False
-            self.last_shift_press = time.time()
-            # print('Shift key was released, it was last pressed at', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.last_shift_press)))
+        pass
+    #     if key == keyboard.Key.shift and self.shift_pressed:
+    #         self.shift_pressed = False
+    #         self.last_shift_press = time.time()
+    #         print('Shift key was released')
 
     def start(self):
         thread = threading.Thread(target=self.listener.start)
@@ -125,10 +133,7 @@ class Transcriber:
 
                 text = text.rstrip('.').strip()
 
-                upper_case = False
-                if self.key_listener.shift_pressed or time.time() - self.key_listener.last_shift_press < len(audio_data) / 16000:
-                    upper_case = True
-                text = (text[:1].upper() if upper_case else text[:1].lower()) + text[1:]
+                text = (text[:1].upper() if self.key_listener.upper_case else text[:1].lower()) + text[1:]
 
                 # Replace punctuations
                 for punctuation, parts in self.args.punctuations.items():
