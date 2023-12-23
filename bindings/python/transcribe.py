@@ -32,20 +32,26 @@ class KeyListener:
         self.upper_case = True
 
     def register_key(self, key: str, callback, arguments=None):  # Register a key combination and its callback
-        key = '+'.join('Key.' + k.lower() if len(k) > 1 else k for k in key.split('+'))  # Add 'Key.' prefix to special keys
+        key = '+'.join(k.lower() if len(k) > 1 else k for k in key.split('+'))  # Add 'Key.' prefix to special keys
         self.key_callbacks[key] = callback, arguments
 
     def on_press(self, key):
-        print(f"pressed {key}")
-        self.pressed_keys.add(str(key))
+        key = str(key).replace("Key.", "").replace("'", "")
+        # print(f"pressed {key}")
+        self.pressed_keys.add(key)
         for key_combination, (callback, arguments) in self.key_callbacks.items():
             keys = set(key_combination.split('+'))
+            print(keys, self.pressed_keys, keys.issubset(self.pressed_keys))
             if keys.issubset(self.pressed_keys):
                 callback(*arguments)
 
     def on_release(self, key):
-        print(f"released {key}")
-        self.pressed_keys.remove(str(key))
+        try:
+            key = str(key).replace("Key.", "").replace("'", "")
+            # print(f"released {key}")
+            self.pressed_keys.remove(key)
+        except Exception as e:
+            print(f"Exception during on_release: {e}")
 
     def start(self):
         self.listener.run()

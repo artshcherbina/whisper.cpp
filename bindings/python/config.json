@@ -10,7 +10,7 @@
         ":": ["colon", "двоето", "двойто"]
     },
     "languages": {
-        "en": "ctrl_r",
-        "ru": "cmd_r"
+        "en": "alt+j",
+        "ru": "alt+h"
     }
 }
