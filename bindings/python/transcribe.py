@@ -41,7 +41,7 @@ class KeyListener:
         self.pressed_keys.add(key)
         for key_combination, (callback, arguments) in self.key_callbacks.items():
             keys = set(key_combination.split('+'))
-            print(keys, self.pressed_keys, keys.issubset(self.pressed_keys))
+            # print(keys, self.pressed_keys, keys.issubset(self.pressed_keys))
             if keys.issubset(self.pressed_keys):
                 callback(*arguments)
 
