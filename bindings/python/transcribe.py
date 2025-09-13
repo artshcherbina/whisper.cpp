@@ -67,7 +67,6 @@ class Transcriber:
 
         self.data_queue = Queue()
         self.recorder = sr.Recognizer(self.args.energy_threshold, self.args.pause_timeout)
-        # self.recorder.dynamic_energy_threshold = False
         pygame.mixer.music.set_volume(self.args.volume)
 
         if 'linux' in platform:
@@ -140,7 +139,10 @@ class Transcriber:
         print(f"[{len(audio_data) / 16000:3.1f}s + {server_time:3.1f}s + {total_time - server_time:3.1f}s] <{original_text}> -> <{text}>")
         if text:
             self.play_sound(True)
-            pyperclip.copy(text)
+            try:
+                pyperclip.copy(text)
+            except Exception as e:
+                print(f"Exception during copying to clipboard: {e}")
 
 if __name__ == "__main__":
     transcriber = Transcriber()
